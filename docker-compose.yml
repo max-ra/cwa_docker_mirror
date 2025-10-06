@@ -1,0 +1,56 @@
+networks:
+  proxy:
+    name: backbone_proxy
+    external: true
+  database:
+    name: backbone_database
+    external: true
+  local:
+
+services:
+  registry-ui:
+    image: joxit/docker-registry-ui:2.5.7
+    restart: always
+    environment:
+      - SINGLE_REGISTRY=true
+      - REGISTRY_TITLE=Docker Registry UI
+      - DELETE_IMAGES=true
+      - SHOW_CONTENT_DIGEST=true
+      - NGINX_PROXY_PASS_URL=http://registry-server:5000
+      - SHOW_CATALOG_NB_TAGS=true
+      - CATALOG_MIN_BRANCHES=1
+      - CATALOG_MAX_BRANCHES=1
+      - TAGLIST_PAGE_SIZE=100
+      - REGISTRY_SECURED=false
+      - CATALOG_ELEMENTS_LIMIT=1000
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=backbone_proxy
+      - traefik.http.routers.registry-ui.ruleSyntax=v3
+      - traefik.http.routers.registry-ui.tls=true
+      - traefik.http.routers.registry-ui.entryPoints=https
+      - traefik.http.routers.registry-ui.tls.certresolver=${CERTRESOLVER:-}
+      - traefik.http.routers.registry-ui.rule=Host("${APPLICATION_FQDN}")
+      - traefik.http.routers.registry-ui.service=registry-ui-service
+      - traefik.http.services.registry-ui-service.loadbalancer.server.port=80
+    container_name: registry-ui
+    networks:
+      - proxy
+      - local
+
+  registry-server:
+    image: registry:3.0.0
+    restart: always
+    environment:
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://${APPLICATION_FQDN}]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD,GET,OPTIONS,DELETE]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials: '[true]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers: '[Authorization,Accept,Cache-Control]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers: '[Docker-Content-Digest]'
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true'
+      REGISTRY_PROXY_REMOTEURL: https://registry-1.docker.io
+    volumes:
+      - /var/lib/registry:/var/lib/registry
+    container_name: registry-server
+    networks:
+      - local
