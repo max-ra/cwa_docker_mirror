@@ -9,7 +9,7 @@ networks:
 
 services:
   registry-ui:
-    image: joxit/docker-registry-ui:2.5.7
+    image: joxit/docker-registry-ui:2.6.0
     restart: always
     environment:
       - SINGLE_REGISTRY=true
