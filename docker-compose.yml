@@ -39,7 +39,7 @@ services:
       - local
 
   registry-server:
-    image: registry:3.0.0
+    image: registry:3.1.1
     restart: always
     environment:
       REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://${APPLICATION_FQDN}]'
